@@ -16,6 +16,14 @@ public class CatAttributes : MonoBehaviour {
     public  int Hate = 0;
     public int CurrentLove;
 
+    void Start()
+    {
+        int temp1;
+        int temp2;
+        int temp3;
+
+    }
+    
     void OnEnable()
     {
         ManagerRef = manager.instance;
