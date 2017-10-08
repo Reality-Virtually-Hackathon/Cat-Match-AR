@@ -6,8 +6,8 @@ using UnityEngine.UI;
 
 public class manager : MonoBehaviour {
     public static manager instance;
-    public enum playstates { PlaneSearch,CatPlacement,InGame};
-    public playstates playerStates;
+    public enum playstates { GameStart,PlaneSearch,CatPlacement,InGame,EndGame};
+    public playstates CurrentGameState;
     public GameObject plane;
     public Camera cam;
     public GameObject catobj;
@@ -17,6 +17,8 @@ public class manager : MonoBehaviour {
     List<TrackedPlane> areaPlanes = new List<TrackedPlane>();
     public List<GameObject> cats = new List<GameObject>();
     int currentCatValue=0;
+    public int chosenCat;
+    public GameObject startImage;
     //
     public  Text TestingText;
     public Text PlaneCountText;
@@ -25,10 +27,10 @@ public class manager : MonoBehaviour {
 
     //
 
-
+        // choose new cat
     public void ChangeOutCat(int direction)
     {
-        if (playerStates == playstates.InGame)
+        if (CurrentGameState == playstates.InGame)
         {
             if (direction == 1)
             {
@@ -37,50 +39,80 @@ public class manager : MonoBehaviour {
                     currentCatValue = 0;
                     cats[2].SetActive(false);
                     cats[0].SetActive(true);
-
+                    mainCat = cats[0].gameObject;
                     cats[0].transform.position = mainAnchor.transform.position;
                     cats[0].transform.parent = mainAnchor.transform;
                     cats[0].transform.rotation = Quaternion.identity;
-                    mainCat = cats[0].gameObject;
+                    
                 }
                 else
                 {
                     cats[currentCatValue].SetActive(false);
                     currentCatValue++;
                     cats[currentCatValue].SetActive(true);
+                    mainCat = cats[currentCatValue].gameObject;
+                    cats[currentCatValue].transform.position = mainAnchor.transform.position;
+                    cats[currentCatValue].transform.parent = mainAnchor.transform;
+                    cats[currentCatValue].transform.rotation = Quaternion.identity;                }
+                mainCat.transform.position = mainAnchor.transform.position;
+            }else
+            {
+                if (currentCatValue == 0)
+                {
 
+                    cats[currentCatValue].SetActive(false);
+                    currentCatValue = 2;
+                    cats[currentCatValue].SetActive(true);
+                    mainCat = cats[currentCatValue].gameObject;
                     cats[currentCatValue].transform.position = mainAnchor.transform.position;
                     cats[currentCatValue].transform.parent = mainAnchor.transform;
                     cats[currentCatValue].transform.rotation = Quaternion.identity;
+                    
+                }
+                else
+                {
+                    cats[currentCatValue].SetActive(false);
+                    currentCatValue--;
+                    cats[currentCatValue].SetActive(true);
                     mainCat = cats[currentCatValue].gameObject;
-
+                    cats[currentCatValue].transform.position = mainAnchor.transform.position;
+                    cats[currentCatValue].transform.parent = mainAnchor.transform;
+                    cats[currentCatValue].transform.rotation = Quaternion.identity;
+                    
                 }
                 mainCat.transform.position = mainAnchor.transform.position;
             }
-
         }
-
-
+        UIManager.instance.setAttributes();
+        chosencatText.text = currentCatValue.ToString();
+            //mainCat.GetComponent<CatAttributes>().CurrentLove.ToString();
     }
-
-  public  void ResetGettingPlane()
+    //reset getting the plane
+  public void ResetGettingPlane()
     {
         for (int i = 0; i < areaPlanes.Count; i++)
         {
             areaPlanes.RemoveAt(0);
         }
-        playerStates = playstates.PlaneSearch;
+        CurrentGameState = playstates.PlaneSearch;
         cats[currentCatValue].SetActive(false);
    
-        //  Destroy(mainCat);
     }
     void Awake()
     {
         cam = Camera.main;
         instance = this;
         PlaneCountText.text = "starting ";
+        StartCoroutine(GameStart());
+
     }
 
+    IEnumerator GameStart()
+    {
+        yield return new WaitForSeconds(3f);
+        startImage.SetActive(false);
+     //   CurrentGameState = playstates.PlaneSearch;
+    }
 
     void FindPlane()
     {
@@ -100,7 +132,7 @@ public class manager : MonoBehaviour {
         if(areaPlanes.Count>0)
         { 
            // planefound = true;
-            playerStates = playstates.CatPlacement;
+            CurrentGameState = playstates.CatPlacement;
             PlaneCountText.text = "count: " + areaPlanes.Count;
             TestingText.text = "plane found";
         }
@@ -110,14 +142,14 @@ public class manager : MonoBehaviour {
     
     void Update()
     {
-        chosencatText.text = "curr: "+ currentCatValue;
+       // chosencatText.text = "curr: "+ currentCatValue;
         // Skip the update if ARCore is not tracking
         if (Frame.TrackingState != FrameTrackingState.Tracking)
         {
             return;
         }
 
-        switch (playerStates)
+        switch (CurrentGameState)
         {
             case playstates.PlaneSearch:
                 FindPlane();
@@ -131,6 +163,17 @@ public class manager : MonoBehaviour {
                 {
                     mainCat.transform.LookAt(cam.transform);
                     mainCat.transform.rotation = Quaternion.Euler(0.0f, mainCat.transform.rotation.eulerAngles.y, mainCat.transform.rotation.z);
+                }
+                break;
+            case playstates.EndGame:
+                    for(int i=0;i<cats.Count;i++)
+                {
+                    CatAttributes personality = cats[i].GetComponent<CatAttributes>();
+                    if(personality.HappyCat)
+                    {
+                        chosenCat = i;
+                        break;
+                    }
                 }
                 break;            
         }       
@@ -157,15 +200,18 @@ public class manager : MonoBehaviour {
             if(hitResult.Plane == areaPlanes[0])
             {
                 mainAnchor = Session.CreateAnchor(hitResult.Point, Quaternion.identity);
-                playerStates = playstates.InGame;
+                CurrentGameState = playstates.InGame;
                 TestingText.text = "Ready to play";
                 UIManager.instance.EnableGamePlayUI();
+               
                 //change to work with new cats
                 cats[0].gameObject.SetActive(true);
                 cats[0].transform.position = hitResult.Point;
                 cats[0].transform.parent = mainAnchor.transform;
                 cats[0].transform.rotation = Quaternion.identity;
                 mainCat = cats[0].gameObject;
+                UIManager.instance.setAttributes();
+                UIManager.instance.StartTimer();
             }            
         }
     }

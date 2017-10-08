@@ -5,7 +5,7 @@ using UnityEngine.Audio;
 
 public class MusicManager : MonoBehaviour {
 
-
+    public static MusicManager instance;
 	public AudioMixerSnapshot DefaultMX; //default layer
 	public AudioMixerSnapshot AffectionMX; //Affection layer (w/ piano)
 
@@ -17,6 +17,7 @@ public class MusicManager : MonoBehaviour {
 	void Awake () {
 		
 		ToDefaultLayer ();
+        instance = this;
 
 	}
 	
@@ -37,11 +38,11 @@ public class MusicManager : MonoBehaviour {
 
 
 	//transitions to default layer
-	void ToDefaultLayer(){
+public	void ToDefaultLayer(){
 		DefaultMX.TransitionTo (affectionToDefaultTime);
 	}
 	//transitions to affection layer
-	void ToAffectionLayer(){
+public	void ToAffectionLayer(){
 		AffectionMX.TransitionTo (defaultToAffectionTime);
 	}
 }

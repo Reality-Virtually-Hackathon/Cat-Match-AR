@@ -5,6 +5,8 @@ using UnityEngine.Audio;
 
 public class SoundManager : MonoBehaviour {
 
+    public static SoundManager instance;
+
 	//UI sounds
 	public AudioClip[] positiveUI;
 	public AudioClip[] neutralUI;
@@ -18,8 +20,10 @@ public class SoundManager : MonoBehaviour {
 	AudioSource source;
 
 	int previousRand = -1;
-
-	// Use this for initialization
+    void Awake()
+    {
+        instance = this;
+    }
 	void Start () {
 		source = GetComponent<AudioSource> ();
 	}
@@ -40,7 +44,7 @@ public class SoundManager : MonoBehaviour {
 		}
 	}
 
-	void happyCatSound(){
+public	void happyCatSound(){
 		int randInt = Random.Range (0, happyCat.Length);
 		if (randInt == previousRand) { //ensures same sound never plays twice in a row
 			while (randInt == previousRand) {
@@ -52,7 +56,7 @@ public class SoundManager : MonoBehaviour {
 		previousRand = randInt;
 	}
 
-	void hungryCatSound(){
+public	void hungryCatSound(){
 		int randInt = Random.Range (0, hungryCat.Length);
 		if (randInt == previousRand) { 
 			while (randInt == previousRand) {
@@ -64,7 +68,7 @@ public class SoundManager : MonoBehaviour {
 		previousRand = randInt;
 	}
 
-	void angryCatSound(){
+public	void angryCatSound(){
 		int randInt = Random.Range (0, angryCat.Length);
 		if (randInt == previousRand) { 
 			while (randInt == previousRand) {
