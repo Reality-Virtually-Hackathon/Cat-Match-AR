@@ -5,6 +5,7 @@ using GoogleARCore;
 using UnityEngine.UI;
 
 public class manager : MonoBehaviour {
+    public static manager instance;
     public enum playstates { PlaneSearch,CatPlacement,InGame};
     public playstates playerStates;
     public GameObject plane;
@@ -12,50 +13,104 @@ public class manager : MonoBehaviour {
     public GameObject catobj;
     bool planefound = false;
     Anchor mainAnchor;
-
+    public GameObject mainCat;
+    List<TrackedPlane> areaPlanes = new List<TrackedPlane>();
+    public List<GameObject> cats = new List<GameObject>();
+    int currentCatValue=0;
     //
-  public  Text TestingText;
+    public  Text TestingText;
     public Text PlaneCountText;
+    public Text chosencatText;
+    public GameObject catSprite;
+
     //
 
+
+    public void ChangeOutCat(int direction)
+    {
+        if (playerStates == playstates.InGame)
+        {
+            if (direction == 1)
+            {
+                if (currentCatValue == 2)
+                {
+                    currentCatValue = 0;
+                    cats[2].SetActive(false);
+                    cats[0].SetActive(true);
+
+                    cats[0].transform.position = mainAnchor.transform.position;
+                    cats[0].transform.parent = mainAnchor.transform;
+                    cats[0].transform.rotation = Quaternion.identity;
+                    mainCat = cats[0].gameObject;
+                }
+                else
+                {
+                    cats[currentCatValue].SetActive(false);
+                    currentCatValue++;
+                    cats[currentCatValue].SetActive(true);
+
+                    cats[currentCatValue].transform.position = mainAnchor.transform.position;
+                    cats[currentCatValue].transform.parent = mainAnchor.transform;
+                    cats[currentCatValue].transform.rotation = Quaternion.identity;
+                    mainCat = cats[currentCatValue].gameObject;
+
+                }
+                mainCat.transform.position = mainAnchor.transform.position;
+            }
+
+        }
+
+
+    }
+
+  public  void ResetGettingPlane()
+    {
+        for (int i = 0; i < areaPlanes.Count; i++)
+        {
+            areaPlanes.RemoveAt(0);
+        }
+        playerStates = playstates.PlaneSearch;
+        cats[currentCatValue].SetActive(false);
+   
+        //  Destroy(mainCat);
+    }
     void Awake()
     {
         cam = Camera.main;
+        instance = this;
+        PlaneCountText.text = "starting ";
     }
 
 
     void FindPlane()
     {
-        // this may be bad
-        List<TrackedPlane> newPlanes = new List<TrackedPlane>();
-        Frame.GetNewPlanes(ref newPlanes);
+        PlaneCountText.text = "count: " + areaPlanes.Count;
+
+        Frame.GetNewPlanes(ref areaPlanes);
       
-
-
             // Iterate over planes found in this frame and instantiate corresponding GameObjects to visualize them.
-            for (int i = 0; i < newPlanes.Count; i++)
+            for (int i = 0; i < areaPlanes.Count; i++)
             {
                 // Instantiate a plane visualization prefab and set it to track the new plane.
                 GameObject planeObject = Instantiate(plane, Vector3.zero, Quaternion.identity,
                     transform);
-                planeObject.GetComponent<PlaneVisualizer>().SetPlane(newPlanes[i]);
+                planeObject.GetComponent<PlaneVisualizer>().SetPlane(areaPlanes[i]);
             }
 
-        if(newPlanes.Count<2)
+        if(areaPlanes.Count>0)
         { 
            // planefound = true;
             playerStates = playstates.CatPlacement;
-            PlaneCountText.text = "count: " + newPlanes.Count;
+            PlaneCountText.text = "count: " + areaPlanes.Count;
             TestingText.text = "plane found";
         }
-
     }
 
  
     
     void Update()
     {
-
+        chosencatText.text = "curr: "+ currentCatValue;
         // Skip the update if ARCore is not tracking
         if (Frame.TrackingState != FrameTrackingState.Tracking)
         {
@@ -72,8 +127,12 @@ public class manager : MonoBehaviour {
                 AnchorCatPlacement();
                 break;
             case playstates.InGame:
-                break;
-            
+                if(mainCat!=null)
+                {
+                    mainCat.transform.LookAt(cam.transform);
+                    mainCat.transform.rotation = Quaternion.Euler(0.0f, mainCat.transform.rotation.eulerAngles.y, mainCat.transform.rotation.z);
+                }
+                break;            
         }       
     }
 
@@ -95,18 +154,19 @@ public class manager : MonoBehaviour {
         {
             // Create an anchor to allow ARCore to track the hitpoint as understanding of the physical
             // world evolves.
-            mainAnchor = Session.CreateAnchor(hitResult.Point, Quaternion.identity);
-            playerStates = playstates.InGame;
-            TestingText.text = "Ready to play";
-            // Intanstiate a Deadpool object as a child of the anchor;
-            // It's transform will now benefit from the anchor's tracking.
-          //  var newcat = Instantiate(catobj, hitResult.Point, Quaternion.identity, mainAnchor.transform);
-
-            // Make the model look at the camera
-          //  newcat.transform.LookAt(cam.transform);
-           // newcat.transform.rotation = Quaternion.Euler(0.0f, newcat.transform.rotation.eulerAngles.y, newcat.transform.rotation.z);
-
-
+            if(hitResult.Plane == areaPlanes[0])
+            {
+                mainAnchor = Session.CreateAnchor(hitResult.Point, Quaternion.identity);
+                playerStates = playstates.InGame;
+                TestingText.text = "Ready to play";
+                UIManager.instance.EnableGamePlayUI();
+                //change to work with new cats
+                cats[0].gameObject.SetActive(true);
+                cats[0].transform.position = hitResult.Point;
+                cats[0].transform.parent = mainAnchor.transform;
+                cats[0].transform.rotation = Quaternion.identity;
+                mainCat = cats[0].gameObject;
+            }            
         }
     }
 }
